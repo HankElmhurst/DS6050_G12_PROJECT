@@ -1,0 +1,3 @@
+# SLURM stdout/stderr — keep local only
+logs/g12_*.err
+logs/g12_*.out

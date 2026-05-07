@@ -19,6 +19,7 @@ Output:
 import os
 import yaml
 from copy import deepcopy
+import argparse
 
 # ============================================================
 # BASELINE CONFIG TEMPLATE
@@ -112,7 +113,7 @@ def set_nested(d: dict, keys: list, value):
     d[keys[-1]] = value
 
 
-def generate_configs(output_dir: str = "../configs"):
+def generate_configs(output_dir: str = "../configs", ablation_model: str = "simple_cnn"):
     os.makedirs(output_dir, exist_ok=True)
     count = 0
 
@@ -139,20 +140,21 @@ def generate_configs(output_dir: str = "../configs"):
         count += 1
         print(f"  Created: {path}")
 
-    # ---- OAT Ablations on Simple CNN ----
+    # ---- OAT Ablations on {ablation_model} ----
     for factor_name, factor_def in ABLATIONS.items():
         for value in factor_def["values"]:
-            # Clean value for filename
             val_str = str(value).replace(".", "").replace("-", "")
             cfg = deepcopy(BASELINE)
-            cfg["experiment"]["name"] = f"ablation_{factor_name}_{val_str}"
+            cfg["experiment"]["name"] = f"ablation_{factor_name}_{val_str}_{ablation_model}"
             cfg["experiment"]["description"] = (
-                f"Ablation: {factor_name}={value} (all others at default)"
+                f"Ablation on {ablation_model}: {factor_name}={value} (all others at default)"
             )
-            cfg["model"]["type"] = "simple_cnn"
+            cfg["model"]["type"] = ablation_model
+            if ablation_model == "deeper_cnn":
+                cfg["model"]["use_residual"] = True
             set_nested(cfg, factor_def["path"], value)
 
-            path = os.path.join(output_dir, f"ablation_{factor_name}_{val_str}.yaml")
+            path = os.path.join(output_dir, f"ablation_{factor_name}_{val_str}_{ablation_model}.yaml")
             with open(path, "w") as f:
                 yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
             count += 1
@@ -189,4 +191,11 @@ def generate_configs(output_dir: str = "../configs"):
 
 
 if __name__ == "__main__":
-    generate_configs()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ablation_model", type=str, default="simple_cnn",
+                        choices=["simple_cnn", "deeper_cnn"],
+                        help="Model to run OAT ablations on")
+    parser.add_argument("--output_dir", type=str, default="configs",
+                        help="Where to write generated YAML configs")
+    args = parser.parse_args()
+    generate_configs(output_dir=args.output_dir, ablation_model=args.ablation_model)

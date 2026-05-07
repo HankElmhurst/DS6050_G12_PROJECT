@@ -2,3 +2,4 @@
 logs/g12_*.err
 logs/g12_*.out
 slurm/run_single_*.slurm
+slurm/run_single_*.slurm
